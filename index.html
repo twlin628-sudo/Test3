@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>STRANDED</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root {
+  --g:#00ff88;--gd:#00cc66;--gx:#003322;
+  --a:#ffaa00;--r:#ff4455;--b:#44aaff;--p:#cc88ff;
+  --bg:#060e08;--bg2:#0b1a10;--bg3:#0f2216;
+  --bd:#1a3322;--bd2:#254433;
+  --t:#a0ffcc;--td:#4a8a60;--tx:#2a4a35;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{
+  background:var(--bg);color:var(--t);
+  font-family:'Share Tech Mono',monospace;font-size:13px;
+  display:flex;flex-direction:column;
+  max-width:393px;margin:0 auto;
+  height:100dvh;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,100,0.015) 3px,rgba(0,255,100,0.015) 4px);
+  pointer-events:none;z-index:900;max-width:393px;margin:0 auto;
+}
+/* HEADER */
+#hdr{flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--bd);padding:6px 10px 5px;}
+#hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+#game-title{font-family:'VT323',monospace;font-size:20px;color:var(--g);letter-spacing:3px;}
+#datetime{font-size:11px;color:var(--td);}
+#weather-line{font-size:11px;color:var(--b);}
+#stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 8px;}
+.stat-mini{display:flex;flex-direction:column;gap:2px;}
+.stat-mini-top{display:flex;justify-content:space-between;font-size:9px;}
+.sml{color:var(--td);}.smv{color:var(--t);}
+.sbar{height:3px;background:var(--bd);border-radius:2px;overflow:hidden;}
+.sfill{height:100%;border-radius:2px;transition:width 0.3s;}
+.s-hp{background:var(--r);}.s-hun{background:var(--a);}.s-thi{background:var(--b);}
+.s-tmp{background:#ff6633;}.s-slp{background:var(--p);}.s-sta{background:var(--g);}
+/* LOG */
+#log{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 10px 4px;-webkit-overflow-scrolling:touch;}
+#log::-webkit-scrollbar{width:2px;}
+#log::-webkit-scrollbar-thumb{background:var(--bd2);}
+.ll{line-height:1.75;font-size:12.5px;word-break:break-all;}
+.li{color:var(--t);}.lw{color:var(--a);}.ld{color:var(--r);}
+.ls{color:var(--g);}.lm{color:var(--td);}.lx{color:var(--b);}.lp{color:var(--bd2);user-select:none;}
+/* TABS */
+#tabs{flex-shrink:0;display:flex;border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);background:var(--bg2);}
+.tab{flex:1;padding:5px 0;text-align:center;font-size:10px;color:var(--td);cursor:pointer;letter-spacing:1px;border-right:1px solid var(--bd);transition:all 0.15s;}
+.tab:last-child{border-right:none;}
+.tab.active{color:var(--g);background:var(--bg3);}
+/* PANELS */
+#panels{flex-shrink:0;}
+.panel{display:none;padding:6px 10px;background:var(--bg2);border-bottom:1px solid var(--bd);}
+.panel.active{display:block;}
+#inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;max-height:90px;overflow-y:auto;}
+.inv-cell{background:var(--bg3);border:1px solid var(--bd);padding:3px 4px;font-size:9px;border-radius:2px;text-align:center;line-height:1.4;}
+.ic-name{color:var(--t);}.ic-qty{color:var(--a);}
+#eq-list{display:flex;gap:6px;flex-wrap:wrap;}
+.eq-slot{background:var(--bg3);border:1px solid var(--bd);padding:3px 8px;font-size:10px;border-radius:2px;}
+.es-label{color:var(--td);font-size:9px;}.es-val{color:var(--a);}
+#rec-list{max-height:100px;overflow-y:auto;font-size:10px;line-height:1.9;}
+.rec-item{display:flex;gap:6px;align-items:baseline;}
+.rc{color:var(--g);}.rn{color:var(--tx);}.rname{color:var(--t);min-width:52px;}.rneed{color:var(--td);}
+#map-container{font-size:11px;line-height:1.45;letter-spacing:2px;font-family:'Share Tech Mono',monospace;overflow-x:auto;white-space:nowrap;max-height:90px;overflow-y:auto;}
+/* INPUT */
+#inp-area{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg2);border-top:1px solid var(--bd);}
+#inp-prompt{color:var(--g);font-size:15px;}
+#inp{flex:1;background:transparent;border:none;outline:none;color:var(--g);font-family:'Share Tech Mono',monospace;font-size:13px;caret-color:var(--g);min-width:0;}
+#inp::placeholder{color:var(--tx);}
+#inp-send{background:var(--bg3);border:1px solid var(--bd2);color:var(--td);font-family:'Share Tech Mono',monospace;font-size:11px;padding:3px 8px;cursor:pointer;border-radius:2px;}
+/* MODAL */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:999;align-items:center;justify-content:center;max-width:393px;margin:0 auto;}
+#modal.show{display:flex;}
+#mbox{background:var(--bg2);border:1px solid var(--gd);padding:20px;width:88%;font-size:12px;line-height:1.9;}
+#mtitle{font-family:'VT323',monospace;font-size:24px;color:var(--g);margin-bottom:10px;letter-spacing:2px;}
+#mbody{color:var(--t);margin-bottom:14px;}
+#mclose{background:transparent;border:1px solid var(--gd);color:var(--g);font-family:'Share Tech Mono',monospace;font-size:12px;padding:4px 14px;cursor:pointer;width:100%;}
+@keyframes blink{50%{opacity:0;}}
+</style>
+</head>
+<body>
+<div id="hdr">
+  <div id="hdr-top">
+    <div id="game-title">STRANDED</div>
+    <div style="text-align:right">
+      <div id="datetime">Day 1  06:00</div>
+      <div id="weather-line">☀ 晴天</div>
+    </div>
+  </div>
+  <div id="stats-row">
+    <div class="stat-mini"><div class="stat-mini-top"><span class="sml">HP</span><span class="smv" id="v-hp">100</span></div><div class="sbar"><div class="sfill s-hp" id="b-hp" style="width:100%"></div></div></div>
+    <div class="stat-mini"><div class="stat-mini-top"><span class="sml">飢餓</span><span class="smv" id="v-hun">100</span></div><div class="sbar"><div class="sfill s-hun" id="b-hun" style="width:100%"></div></div></div>
+    <div class="stat-mini"><div class="stat-mini-top"><span class="sml">口渴</span><span class="smv" id="v-thi">100</span></div><div class="sbar"><div class="sfill s-thi" id="b-thi" style="width:100%"></div></div></div>
+    <div class="stat-mini"><div class="stat-mini-top"><span class="sml">體溫</span><span class="smv" id="v-tmp">正常</span></div><div class="sbar"><div class="sfill s-tmp" id="b-tmp" style="width:70%"></div></div></div>
+    <div class="stat-mini"><div class="stat-mini-top"><span class="sml">睡眠</span><span class="smv" id="v-slp">100</span></div><div class="sbar"><div class="sfill s-slp" id="b-slp" style="width:100%"></div></div></div>
+    <div class="stat-mini"><div class="stat-mini-top"><span class="sml">體力</span><span class="smv" id="v-sta">100</span></div><div class="sbar"><div class="sfill s-sta" id="b-sta" style="width:100%"></div></div></div>
+  </div>
+</div>
+
+<div id="log"></div>
+
+<div id="tabs">
+  <div class="tab active" onclick="switchTab('inv')">背包</div>
+  <div class="tab" onclick="switchTab('eq')">裝備</div>
+  <div class="tab" onclick="switchTab('rec')">配方</div>
+  <div class="tab" onclick="switchTab('map')">地圖</div>
+</div>
+
+<div id="panels">
+  <div class="panel active" id="panel-inv"><div id="inv-grid"></div></div>
+  <div class="panel" id="panel-eq"><div id="eq-list"></div></div>
+  <div class="panel" id="panel-rec"><div id="rec-list"></div></div>
+  <div class="panel" id="panel-map"><div id="map-container"></div></div>
+</div>
+
+<div id="inp-area">
+  <span id="inp-prompt">&gt;</span>
+  <input id="inp" type="text" placeholder="輸入指令... (help)" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+  <button id="inp-send" onclick="submitCmd()">送出</button>
+</div>
+
+<div id="modal">
+  <div id="mbox">
+    <div id="mtitle"></div>
+    <div id="mbody"></div>
+    <button id="mclose" onclick="closeModal()">[ 確認 ]</button>
+  </div>
+</div>
+
+<script>
+const MAP_W=13,MAP_H=13;
+const TERRAIN={
+  water:   {char:'~',label:'海洋',pass:false,res:[]},
+  beach:   {char:',',label:'海灘',pass:true, res:['貝殼','海草','石頭','貝殼']},
+  plain:   {char:'.',label:'平原',pass:true, res:['野草','漿果','石頭','樹枝','野草']},
+  forest:  {char:'T',label:'森林',pass:true, res:['木材','樹枝','野果','藥草','蘑菇','木材','藤蔓']},
+  mountain:{char:'^',label:'山地',pass:true, res:['石頭','鐵礦','燧石','石頭']},
+  cave:    {char:'O',label:'洞穴',pass:true, res:['石頭','鐵礦','骨頭','燧石','骨頭']},
+};
+
+// RECIPES — 所有需求素材都必須可從地形/事件取得，所有成品都有實際用途
+const RECIPES={
+  // 武器
+  '骨刀':   {needs:{骨頭:2,樹枝:1},           gives:{骨刀:1},    type:'weapon',atk:5,  desc:'早期輕型武器'},
+  '貝殼刀': {needs:{貝殼:3},                  gives:{貝殼刀:1},  type:'weapon',atk:4,  desc:'海灘素材'},
+  '石刀':   {needs:{石頭:2,樹枝:1},           gives:{石刀:1},    type:'weapon',atk:7,  desc:'基礎武器'},
+  '石斧':   {needs:{木材:2,石頭:2,藤蔓:1},    gives:{石斧:1},    type:'weapon',atk:10, desc:'砍樹兼武器'},
+  '弓':     {needs:{木材:3,樹枝:2,藤蔓:2},    gives:{弓:1},      type:'weapon',atk:12, desc:'遠程攻擊'},
+  '強化弓': {needs:{弓:1,繩索:1,木材:1},      gives:{強化弓:1},  type:'weapon',atk:18, desc:'繩索強化版'},
+  '鐵刀':   {needs:{鐵礦:3,燧石:1,樹枝:1},    gives:{鐵刀:1},    type:'weapon',atk:22, desc:'金屬武器'},
+  // 防具
+  '皮甲':   {needs:{獸皮:3,藤蔓:2},           gives:{皮甲:1},    type:'armor', def:5,  desc:'基礎防具'},
+  '強化皮甲':{needs:{皮甲:1,骨頭:3,藤蔓:1},   gives:{強化皮甲:1},type:'armor', def:10, desc:'骨頭強化'},
+  '鐵甲':   {needs:{鐵礦:5,藤蔓:2},           gives:{鐵甲:1},    type:'armor', def:18, desc:'金屬防具'},
+  // 工具/建設
+  '貝殼碗': {needs:{貝殼:2,石頭:1},           gives:{貝殼碗:1},  type:'tool',  desc:'盛水飲用'},
+  '水壺':   {needs:{石頭:3,藤蔓:1},           gives:{水壺:1},    type:'tool',  desc:'儲水容器'},
+  '儲水罐': {needs:{空罐:1,石頭:1},           gives:{儲水罐:1},  type:'tool',  desc:'空罐改造'},
+  '營火':   {needs:{木材:4,石頭:2,樹枝:3},    gives:{營火:1},    type:'build', desc:'取暖烹飪'},
+  '燧石火': {needs:{燧石:2,石頭:1},           gives:{燧石火:1},  type:'build', desc:'快速點火'},
+  '木屋':   {needs:{木材:10,石頭:5,藤蔓:3},   gives:{木屋:1},    type:'build', desc:'安全休眠'},
+  '陷阱':   {needs:{木材:3,樹枝:4,繩索:1},    gives:{陷阱:1},    type:'build', desc:'被動捕獵'},
+  // 食物/醫療
+  '繃帶':   {needs:{野草:2,藤蔓:1},           gives:{繃帶:2},    type:'medical',desc:'治療傷口'},
+  '藥草茶': {needs:{藥草:2,水:1},             gives:{藥草茶:1},  type:'usable', desc:'恢復HP+體力'},
+  '烤肉':   {needs:{生肉:1},                  gives:{烤肉:1},    type:'food',   desc:'需要營火'},
+  '乾糧':   {needs:{野果:2,野草:1},           gives:{乾糧:2},    type:'food',   desc:'保存食物'},
+  // 素材轉換
+  '藤蔓x2': {needs:{海草:3},                  gives:{藤蔓:2},    type:'material',desc:'海草轉藤蔓'},
+  // 逃脫
+  '木筏':   {needs:{木材:20,藤蔓:10,石斧:1},  gives:{木筏:1},    type:'escape', desc:'逃離小島！'},
+};
+
+const EDIBLE={漿果:20,野果:25,鳥蛋:30,烤肉:60,蘑菇:35,乾糧:50};
+const USABLE={
+  繃帶:(G)=>{G.s.hp=cl(G.s.hp+15);G.infected=false;log('包紮傷口，HP+15','ls');},
+  藥草茶:(G)=>{G.s.hp=cl(G.s.hp+25);G.s.stamina=cl(G.s.stamina+30);log('喝藥草茶，HP+25，體力+30','ls');},
+  貝殼碗:(G)=>{
+    if(G.map[G.py][G.px]==='cave'||G.weather==='rain'||G.weather==='storm'){
+      G.s.thirst=cl(G.s.thirst+25);log('用貝殼碗盛水喝，口渴+25','ls');
+    }else{log('這裡沒有水源可盛水。','lw');return false;}
+  },
+  水壺:(G)=>{
+    if(G.map[G.py][G.px]==='cave'||G.weather==='rain'||G.weather==='storm'){
+      addItem('水',3);log('用水壺收集了水×3','ls');
+    }else{log('這裡沒有水源。','lw');return false;}
+  },
+  儲水罐:(G)=>{
+    if(G.map[G.py][G.px]==='cave'||G.weather==='rain'||G.weather==='storm'){
+      addItem('水',2);log('用儲水罐收集了水×2','ls');
+    }else{log('這裡沒有水源。','lw');return false;}
+  },
+  火柴:(G)=>{
+    G.built.push({x:G.px,y:G.py,type:'營火'});
+    log('用火柴點燃營火！','ls');
+  },
+  燧石火:(G)=>{
+    G.built.push({x:G.px,y:G.py,type:'營火'});
+    log('燧石打火，營火燃起！','ls');
+  },
+};
+
+// EVENTS — 掉落物品全部有配方或可直接食用/使用
+const EVENTS={
+  forest:[
+    {msg:'一頭野豬衝了出來！',type:'combat',enemy:'野豬',hp:30,atk:8,drop:{生肉:2,獸皮:1}},
+    {msg:'你在樹上發現鳥巢，裡面有鳥蛋。',type:'item',item:'鳥蛋',qty:2},
+    {msg:'找到一片漿果灌木叢！',type:'item',item:'漿果',qty:4},
+    {msg:'你找到一叢藥草。',type:'item',item:'藥草',qty:2},
+    {msg:'一條蛇咬了你！',type:'dmg',dmg:10},
+    {msg:'森林深處傳來奇怪聲音，你繞道而行。',type:'atm'},
+  ],
+  cave:[
+    {msg:'洞熊出現了！',type:'combat',enemy:'洞熊',hp:60,atk:15,drop:{生肉:4,獸皮:3,骨頭:2}},
+    {msg:'廢棄背包裡有一些物資。',type:'loot',items:{繃帶:2,石頭:3,火柴:1}},
+    {msg:'洞穴牆上有古老刻痕。',type:'atm'},
+    {msg:'地面濕滑，你摔倒擦傷。',type:'dmg',dmg:6},
+  ],
+  beach:[
+    {msg:'沉船殘骸！裡面有物資。',type:'loot',items:{木材:5,繩索:2,空罐:1}},
+    {msg:'你抓到一隻海鷗。',type:'item',item:'生肉',qty:1},
+    {msg:'你撿到一些貝殼。',type:'item',item:'貝殼',qty:3},
+    {msg:'海浪沖來一個玻璃瓶，裡面有張字條。',type:'atm'},
+  ],
+  mountain:[
+    {msg:'落石滾落！',type:'dmg',dmg:18},
+    {msg:'站在高處眺望整座島嶼，心中燃起希望。',type:'atm'},
+    {msg:'岩縫中找到礦石。',type:'item',item:'鐵礦',qty:2},
+    {msg:'一頭山羊攻擊了你！',type:'combat',enemy:'山羊',hp:20,atk:6,drop:{生肉:1,獸皮:1}},
+  ],
+  plain:[
+    {msg:'你遇到一個衣衫褸的倖存者。',type:'npc'},
+    {msg:'草叢中找到一個空罐。',type:'item',item:'空罐',qty:1},
+    {msg:'開闊地風很大，體溫下降。',type:'stat',stat:'temp',val:-8},
+    {msg:'你找到一叢野草。',type:'item',item:'野草',qty:3},
+  ],
+};
+const NPC_LINES=[
+  '「你也困在這裡嗎？小心山那邊的熊。」',
+  '「島的東北角有艘廢棄的船，也許能修好它。」',
+  '「下雨時快收集雨水，用水壺或貝殼碗都行。」',
+];
+
+let G=null;
+function cl(v,mn=0,mx=100){return Math.max(mn,Math.min(mx,v));}
+function addItem(k,v){if(G)G.inv[k]=(G.inv[k]||0)+v;}
+function remItem(k,v){if(G)G.inv[k]=Math.max(0,(G.inv[k]||0)-v);}
+function getAtk(){const w=G.equipped.weapon;return w&&RECIPES[w]?RECIPES[w].atk||2:2;}
+function getDef(){const a=G.equipped.armor;return a&&RECIPES[a]?RECIPES[a].def||0:0;}
+
+function newGame(){
+  const map=genMap();
+  let sx=Math.floor(MAP_W/2),sy=Math.floor(MAP_H/2);
+  outer:for(let r=1;r<MAP_H-1;r++)for(let c=1;c<MAP_W-1;c++){if(map[r][c]==='beach'){sx=c;sy=r;break outer;}}
+  G={map,explored:Array.from({length:MAP_H},()=>Array(MAP_W).fill(false)),
+    px:sx,py:sy,s:{hp:100,hunger:100,thirst:100,temp:70,sleep:100,stamina:100},
+    infected:false,inv:{},equipped:{weapon:null,armor:null,tool:null},
+    built:[],day:1,hour:6,minute:0,weather:'clear',weatherTimer:120,tickN:0,dead:false,won:false};
+  reveal(sx,sy,2);
+  logSep();log('  STRANDED — 荒島求生','lx');logSep();
+  log('你從沉船殘骸中爬上了荒島海灘。','li');
+  log('收集素材，建造設施，製作木筏逃離！','li');logSep();
+  log('輸入 <span style="color:#00ff88">help</span> 查看指令。','li');log('','li');
+  descLoc();renderAll();
+}
+
+function genMap(){
+  const m=Array.from({length:MAP_H},()=>Array(MAP_W).fill('water'));
+  const cx=MAP_W/2,cy=MAP_H/2,rad=5;
+  for(let y=0;y<MAP_H;y++)for(let x=0;x<MAP_W;x++){
+    const d=Math.sqrt((x-cx)**2+(y-cy)**2)+(Math.random()-0.5)*1.8;
+    if(d<rad-1.5)m[y][x]='plain';else if(d<rad)m[y][x]='beach';
+  }
+  for(let y=1;y<MAP_H-1;y++)for(let x=1;x<MAP_W-1;x++){
+    if(m[y][x]==='plain'){const r=Math.random();if(r<0.28)m[y][x]='forest';else if(r<0.36)m[y][x]='mountain';else if(r<0.40)m[y][x]='cave';}
+  }
+  return m;
+}
+
+function reveal(x,y,r){
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const nx=x+dx,ny=y+dy;if(nx>=0&&nx<MAP_W&&ny>=0&&ny<MAP_H)G.explored[ny][nx]=true;}
+}
+
+function renderMap(){
+  const tc={water:'#226699',beach:'#8a7a40',plain:'#4a5a30',forest:'#2a7a2a',mountain:'#777',cave:'#5a3a2a'};
+  let html='';
+  for(let y=0;y<MAP_H;y++){
+    for(let x=0;x<MAP_W;x++){
+      if(x===G.px&&y===G.py){html+=`<span style="color:#00ff88;animation:blink 1s step-end infinite">@</span>`;}
+      else if(!G.explored[y][x]){html+=`<span style="color:#1a2a1a">?</span>`;}
+      else{
+        const t=G.map[y][x];
+        const camp=G.built.some(b=>b.x===x&&b.y===y&&b.type==='營火');
+        html+=`<span style="color:${camp?'#ffaa00':tc[t]||'#aaa'}">${camp?'▲':TERRAIN[t]?.char||'?'}</span>`;
+      }
+      html+=' ';
+    }
+    html+='\n';
+  }
+  document.getElementById('map-container').innerHTML=`<pre style="font-family:'Share Tech Mono',monospace">${html}</pre>`;
+}
+
+function log(msg,cls='li'){
+  const el=document.getElementById('log');
+  const d=document.createElement('div');d.className='ll '+cls;d.innerHTML=msg;el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+}
+function logSep(){log('─'.repeat(34),'lp');}
+
+function renderAll(){renderStats();renderInv();renderEq();renderRec();}
+
+function renderStats(){
+  const s=G.s;
+  const sb=(id,v)=>{
+    document.getElementById('b-'+id).style.width=Math.max(0,v)+'%';
+    const el=document.getElementById('v-'+id);
+    if(el)el.textContent=id==='tmp'?(v<30?'低溫':v>85?'高溫':'正常'):Math.round(v);
+  };
+  sb('hp',s.hp);sb('hun',s.hunger);sb('thi',s.thirst);sb('tmp',s.temp);sb('slp',s.sleep);sb('sta',s.stamina);
+  const hh=String(G.hour).padStart(2,'0'),mm=String(G.minute).padStart(2,'0');
+  document.getElementById('datetime').textContent=`Day ${G.day}  ${hh}:${mm}${G.infected?' [感染]':''}`;
+  const wt={clear:'☀ 晴天',rain:'🌧 下雨',storm:'⛈ 暴風雨',fog:'🌫 濃霧'};
+  document.getElementById('weather-line').textContent=wt[G.weather]||'☀ 晴天';
+}
+
+function renderInv(){
+  const el=document.getElementById('inv-grid');
+  const items=Object.entries(G.inv).filter(([,v])=>v>0);
+  if(!items.length){el.innerHTML='<div style="color:var(--tx);font-size:10px;padding:4px">背包是空的</div>';return;}
+  el.innerHTML=items.map(([k,v])=>`<div class="inv-cell"><div class="ic-name">${k}</div><div class="ic-qty">×${v}</div></div>`).join('');
+}
+
+function renderEq(){
+  const eq=G.equipped;
+  document.getElementById('eq-list').innerHTML=
+    ['武器','防具','工具'].map((l,i)=>{const k=['weapon','armor','tool'][i];return`<div class="eq-slot"><div class="es-label">${l}</div><div class="es-val">${eq[k]||'—'}</div></div>`;}).join('')+
+    `<div class="eq-slot"><div class="es-label">ATK</div><div class="es-val">${getAtk()}</div></div>`+
+    `<div class="eq-slot"><div class="es-label">DEF</div><div class="es-val">${getDef()}</div></div>`;
+}
+
+function renderRec(){
+  const el=document.getElementById('rec-list');
+  el.innerHTML=Object.entries(RECIPES).map(([name,rec])=>{
+    const can=Object.entries(rec.needs).every(([k,v])=>(G.inv[k]||0)>=v);
+    const needs=Object.entries(rec.needs).map(([k,v])=>`${k}×${v}`).join(' ');
+    return`<div class="rec-item"><span class="${can?'rc':'rn'}">${can?'✓':'✗'}</span><span class="rname">${name}</span><span class="rneed">${needs}</span></div>`;
+  }).join('');
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['inv','eq','rec','map'][i]===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='map')renderMap();
+}
+
+function tick(mins=30){
+  if(!G||G.dead||G.won)return;
+  G.minute+=mins;
+  while(G.minute>=60){G.minute-=60;G.hour++;}
+  while(G.hour>=24){G.hour-=24;G.day++;log(`─ 第 ${G.day} 天 ─`,'lx');}
+  G.weatherTimer-=mins;
+  if(G.weatherTimer<=0)doWeather();
+  const night=G.hour<6||G.hour>=20,rain=G.weather==='rain'||G.weather==='storm';
+  G.s.hunger=cl(G.s.hunger-3);G.s.thirst=cl(G.s.thirst-5);
+  G.s.sleep=cl(G.s.sleep-(night?0:2));
+  if(rain)G.s.temp=cl(G.s.temp-4);else if(night)G.s.temp=cl(G.s.temp-2);else G.s.temp=cl(G.s.temp+1);
+  if(G.infected)G.s.hp=cl(G.s.hp-3);
+  if(G.s.hunger<=0)G.s.hp=cl(G.s.hp-5);
+  if(G.s.thirst<=0)G.s.hp=cl(G.s.hp-8);
+  if(G.s.temp<20)G.s.hp=cl(G.s.hp-4);
+  G.tickN++;
+  if(G.tickN%4===0)warnStats();
+  if(G.s.hp<=0)doDeath();
+}
+
+function warnStats(){
+  if(G.s.hunger<25)log('⚠ 極度飢餓','lw');
+  if(G.s.thirst<20)log('⚠ 嚴重缺水','lw');
+  if(G.s.temp<25)log('⚠ 體溫過低！','ld');
+  if(G.s.sleep<15)log('⚠ 需要睡眠','lw');
+  if(G.infected)log('⚠ 傷口感染中','ld');
+}
+
+function doWeather(){
+  const pool=['clear','clear','clear','rain','rain','storm','fog'];
+  G.weather=pool[Math.floor(Math.random()*pool.length)];
+  G.weatherTimer=60+Math.random()*120;
+  const wm={clear:'天氣放晴了。',rain:'開始下雨，可收集雨水。',storm:'暴風雨！體溫快速下降。',fog:'濃霧籠罩。'};
+  log(wm[G.weather],G.weather==='clear'?'ls':G.weather==='fog'?'lm':'lw');
+}
+
+function descLoc(){
+  const t=G.map[G.py][G.px];
+  const descs={beach:'海浪拍打沙灘，遠處是無盡的海洋。',forest:'茂密樹林遮天，泥土氣息濃郁。',plain:'開闊草地一望無際。',mountain:'崎嶇岩石遍布，可眺望全島。',cave:'洞穴深邃黑暗，滴水聲迴響。',water:'你站在水邊。'};
+  log(`[${TERRAIN[t]?.label}] ${descs[t]||''}`, 'lm');
+  const here=G.built.filter(b=>b.x===G.px&&b.y===G.py);
+  if(here.length)log(`設施: ${here.map(b=>b.type).join(', ')}`,'ls');
+}
+
+function doMove(dir){
+  const dm={n:[0,-1],s:[0,1],e:[1,0],w:[-1,0],north:[0,-1],south:[0,1],east:[1,0],west:[-1,0]};
+  const d=dm[dir];if(!d){log('方向錯誤，請用 n/s/e/w','lw');return;}
+  const nx=G.px+d[0],ny=G.py+d[1];
+  if(nx<0||nx>=MAP_W||ny<0||ny>=MAP_H){log('無法再往那個方向走。','lw');return;}
+  if(G.map[ny][nx]==='water'){log('那邊是大海，無法通過。','lw');return;}
+  G.px=nx;G.py=ny;reveal(nx,ny,1);tick(30);G.s.stamina=cl(G.s.stamina-5);
+  log(`往${{n:'北',s:'南',e:'東',w:'西',north:'北',south:'南',east:'東',west:'西'}[dir]}方移動了。`,'lm');
+  descLoc();renderAll();
+}
+
+function doExplore(){
+  const t=G.map[G.py][G.px];if(t==='water'){log('無法在水中探索。','lw');return;}
+  tick(30);G.s.stamina=cl(G.s.stamina-10);
+  const res=TERRAIN[t]?.res||[];
+  if(res.length){
+    const item=res[Math.floor(Math.random()*res.length)];
+    const qty=1+Math.floor(Math.random()*3);
+    addItem(item,qty);
+    log(`探索${TERRAIN[t].label}，獲得 <span style="color:#ffaa00">${item} ×${qty}</span>`,'li');
+    if(Math.random()<0.3){const i2=res[Math.floor(Math.random()*res.length)];const q2=1+Math.floor(Math.random()*2);addItem(i2,q2);log(`也找到了 ${i2} ×${q2}`,'lm');}
+  }
+  if(Math.random()<0.45)triggerEvent(t);
+  renderAll();
+}
+
+function triggerEvent(terrain){
+  const pool=EVENTS[terrain]||EVENTS.plain;
+  const ev=pool[Math.floor(Math.random()*pool.length)];
+  log('〔事件〕','lm');
+  log(ev.msg,ev.type==='combat'?'ld':ev.type==='dmg'?'lw':'li');
+  if(ev.type==='item'){addItem(ev.item,ev.qty);log(`取得: ${ev.item} ×${ev.qty}`,'ls');}
+  else if(ev.type==='loot'){Object.entries(ev.items).forEach(([k,v])=>addItem(k,v));log(`取得: ${Object.entries(ev.items).map(([k,v])=>k+'×'+v).join(', ')}`,'ls');}
+  else if(ev.type==='dmg'){G.s.hp=cl(G.s.hp-ev.dmg);log(`受傷 -${ev.dmg} HP`,'lw');if(Math.random()<0.35){G.infected=true;log('傷口感染！用繃帶治療。','ld');}}
+  else if(ev.type==='combat')doCombat(ev);
+  else if(ev.type==='npc')log(NPC_LINES[Math.floor(Math.random()*NPC_LINES.length)],'lx');
+  else if(ev.type==='stat')G.s[ev.stat]=cl((G.s[ev.stat]||50)+ev.val);
+}
+
+function doCombat(ev){
+  const atk=getAtk(),def=getDef();let eHp=ev.hp,rounds=0;
+  while(eHp>0&&G.s.hp>0&&rounds<12){eHp-=atk+Math.floor(Math.random()*6);G.s.hp=cl(G.s.hp-(Math.max(1,ev.atk-def+Math.floor(Math.random()*4)-2)));rounds++;}
+  if(G.s.hp>0&&eHp<=0){
+    log(`擊敗了${ev.enemy}！`,'ls');
+    if(ev.drop){Object.entries(ev.drop).forEach(([k,v])=>addItem(k,v));log(`戰利品: ${Object.entries(ev.drop).map(([k,v])=>k+'×'+v).join(', ')}`,'ls');}
+  }else{log(`${ev.enemy}擊退了你，HP剩: ${Math.round(G.s.hp)}`,'ld');if(Math.random()<0.3){G.infected=true;log('傷口感染...','ld');}}
+}
+
+function doCraft(item){
+  if(!item){log('用法: craft [物品]  例: craft 石斧','lw');return;}
+  const rec=RECIPES[item];
+  if(!rec){log(`不知道如何製作「${item}」，查看配方面板。`,'lw');return;}
+  if(item==='烤肉'&&!G.built.some(b=>b.x===G.px&&b.y===G.py&&b.type==='營火')){log('需要先在此處建造營火。','lw');return;}
+  const miss=Object.entries(rec.needs).filter(([k,v])=>(G.inv[k]||0)<v).map(([k,v])=>`${k}(缺${v-(G.inv[k]||0)})`);
+  if(miss.length){log(`材料不足: ${miss.join(', ')}`,'lw');return;}
+  Object.entries(rec.needs).forEach(([k,v])=>remItem(k,v));
+  Object.entries(rec.gives).forEach(([k,v])=>addItem(k,v));
+  tick(60);
+  log(`製作了 <span style="color:#ffaa00">${item}</span> — ${rec.desc}`,'ls');
+  if(rec.type==='weapon')G.equipped.weapon=item;
+  else if(rec.type==='armor')G.equipped.armor=item;
+  else if(rec.type==='tool')G.equipped.tool=item;
+  else if(rec.type==='build'){G.built.push({x:G.px,y:G.py,type:item});log(`${item} 已建造在此位置。`,'ls');}
+  else if(rec.type==='food'){G.s.hunger=cl(G.s.hunger+40);remItem(item,1);}
+  else if(rec.type==='escape')doWin();
+  renderAll();
+}
+
+function doEat(item){
+  if(!item){const a=Object.keys(EDIBLE).find(k=>(G.inv[k]||0)>0);if(!a){log('背包裡沒有食物。','lw');return;}item=a;}
+  if(!(G.inv[item]>0)){log(`你沒有「${item}」。`,'lw');return;}
+  const val=EDIBLE[item];
+  if(!val){log(`「${item}」不是食物，試試 use ${item}。`,'lw');return;}
+  if(item==='蘑菇'&&Math.random()<0.3){log('這蘑菇有毒！HP-20','ld');G.s.hp=cl(G.s.hp-20);}
+  else{G.s.hunger=cl(G.s.hunger+val);log(`吃了 ${item}，飢餓緩解。`,'ls');}
+  remItem(item,1);tick(10);renderAll();
+}
+
+function doDrink(){
+  if((G.inv['水']||0)>0){G.s.thirst=cl(G.s.thirst+50);remItem('水',1);log('你喝了水，口渴緩解。','ls');}
+  else if(G.map[G.py][G.px]==='cave'||G.weather==='rain'||G.weather==='storm'){
+    G.s.thirst=cl(G.s.thirst+30);addItem('水',1);
+    log(G.weather==='rain'?'收集了雨水並喝了一些。':'找到洞穴積水喝了一些。','ls');
+  }else{log('附近沒有水源。去洞穴或下雨時收集水。','lw');log('提示: craft 水壺 或 craft 貝殼碗','lm');}
+  tick(10);renderAll();
+}
+
+function doSleep(){
+  const hasHut=G.built.some(b=>b.x===G.px&&b.y===G.py&&b.type==='木屋');
+  if(G.hour>=6&&G.hour<20&&!hasHut){log('白天無法入睡。(建造木屋可隨時休眠)','lw');return;}
+  log('你躺下休息...','lm');tick(480);
+  G.s.sleep=cl(G.s.sleep+80);G.s.stamina=cl(G.s.stamina+60);
+  const hasFire=G.built.some(b=>b.x===G.px&&b.y===G.py&&b.type==='營火');
+  if(hasFire){G.s.temp=cl(G.s.temp+20);log('營火讓你睡得溫暖。','ls');}
+  log('你醒來，精神恢復了。','ls');renderAll();
+}
+
+function doUse(item){
+  if(!item){log('用法: use [物品]  例: use 繃帶','lw');return;}
+  if(!(G.inv[item]>0)){log(`你沒有「${item}」。`,'lw');return;}
+  const fn=USABLE[item];
+  if(!fn){log(`不知道如何使用「${item}」。也許可以 craft？`,'lw');return;}
+  const r=fn(G);if(r!==false)remItem(item,1);
+  tick(10);renderAll();
+}
+
+function doDeath(){
+  G.dead=true;logSep();log('你死了。','ld');log(`存活了 ${G.day} 天。`,'lm');log('輸入 restart 重新開始。','lx');logSep();
+}
+
+function doWin(){
+  G.won=true;
+  showModal('逃脫成功！',`歷經 ${G.day} 天的荒島求生\n你建造了木筏，踏上回家之路。\n\n海風吹拂，遠處出現了燈火。\n\n恭喜完成 STRANDED！`);
+}
+
+function showModal(t,b){document.getElementById('mtitle').textContent=t;document.getElementById('mbody').innerHTML=b.replace(/\n/g,'<br>');document.getElementById('modal').classList.add('show');}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+
+const hist=[];let histI=-1;
+function submitCmd(){const el=document.getElementById('inp');processCmd(el.value);el.value='';el.focus();}
+function processCmd(raw){
+  if(!raw.trim())return;
+  const parts=raw.trim().split(/\s+/),cmd=parts[0].toLowerCase(),arg=parts.slice(1).join(' ');
+  hist.unshift(raw);if(hist.length>30)hist.pop();histI=-1;
+  log(`<span style="color:var(--td)">></span> ${raw}`,'lm');
+  if(G?.dead||G?.won){if(cmd==='restart'||cmd==='new')restartGame();else log('遊戲已結束。輸入 restart 重新開始。','lm');return;}
+  const moves=['n','s','e','w','north','south','east','west'];
+  if(moves.includes(cmd)){doMove(cmd);return;}
+  switch(cmd){
+    case 'go':doMove((arg||'').toLowerCase());break;
+    case 'look':tick(10);descLoc();renderAll();break;
+    case 'explore':case 'ex':doExplore();break;
+    case 'craft':doCraft(arg);break;
+    case 'eat':doEat(arg||null);break;
+    case 'drink':doDrink();break;
+    case 'sleep':doSleep();break;
+    case 'use':doUse(arg);break;
+    case 'status':case 'st':
+      logSep();
+      log(`HP:${Math.round(G.s.hp)} 飢:${Math.round(G.s.hunger)} 渴:${Math.round(G.s.thirst)}`,'li');
+      log(`溫:${G.s.temp<30?'低溫':G.s.temp>85?'高溫':'正常'} 睡:${Math.round(G.s.sleep)} 力:${Math.round(G.s.stamina)}`,'li');
+      log(`感染:${G.infected?'是':'否'} ATK:${getAtk()} DEF:${getDef()}`,'li');
+      logSep();break;
+    case 'wait':tick(60);log('時間流逝...','lm');renderAll();break;
+    case 'help':case '?':
+      logSep();log('指令說明','lx');
+      [['go n/s/e/w','移動'],['explore/ex','探索收集'],['craft [物品]','製作'],['eat [食物]','吃東西'],
+       ['drink','喝水'],['sleep','睡覺'],['use [物品]','使用物品'],['status/st','詳細狀態'],
+       ['wait','等待1小時'],['restart','重新開始'],['map/inv/rec','切換面板']
+      ].forEach(([c,d])=>log(`<span style="color:#00ff88">${c}</span> — ${d}`,'li'));
+      logSep();log('目標: craft 木筏 (木材×20+藤蔓×10+石斧×1)','lw');logSep();break;
+    case 'map':switchTab('map');break;
+    case 'inv':case 'i':case 'inventory':switchTab('inv');break;
+    case 'rec':case 'recipes':switchTab('rec');break;
+    case 'restart':case 'new':restartGame();break;
+    default:log(`未知指令「${cmd}」，輸入 help 查看說明。`,'lw');
+  }
+}
+
+function restartGame(){document.getElementById('log').innerHTML='';closeModal();newGame();}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const inp=document.getElementById('inp');
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter')submitCmd();
+    else if(e.key==='ArrowUp'){e.preventDefault();if(histI<hist.length-1){histI++;inp.value=hist[histI]||'';}}
+    else if(e.key==='ArrowDown'){e.preventDefault();if(histI>0){histI--;inp.value=hist[histI];}else{histI=-1;inp.value='';}}
+  });
+  document.addEventListener('click',e=>{if(!e.target.closest('#modal')&&!e.target.closest('#tabs'))inp.focus();});
+  newGame();
+});
+</script>
+</body>
+</html>
