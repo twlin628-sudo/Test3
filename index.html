@@ -58,8 +58,7 @@ body::before{
   padding:5px 12px;display:flex;align-items:center;justify-content:space-between;font-size:12px;
 }
 #loc-left{display:flex;align-items:center;gap:8px;}
-#loc-name{color:var(--td);}
-#loc-coord{color:var(--tx);font-size:11px;}
+#loc-name{color:var(--td);}#loc-coord{color:var(--tx);font-size:11px;}
 #loc-res-wrap{display:flex;align-items:center;gap:6px;}
 #loc-res-bar-outer{width:60px;height:5px;background:var(--bd);border-radius:3px;overflow:hidden;}
 #loc-res-bar-inner{height:100%;border-radius:3px;transition:width 0.4s;}
@@ -82,8 +81,7 @@ body::before{
 .rc{color:var(--g);}.rn2{color:var(--tx);}
 .rnm{color:var(--t);}
 .ri-right{display:flex;flex-direction:column;}
-.rnd{color:var(--td);font-size:10px;}
-.rpu{color:var(--o);font-size:10px;}
+.rnd{color:var(--td);font-size:10px;}.rpu{color:var(--o);font-size:10px;}
 #shelter-detail{font-size:13px;line-height:1.9;}
 .sh-stage{padding:4px 0;border-bottom:1px solid var(--bd);display:flex;gap:8px;align-items:flex-start;}
 .sh-done{color:var(--g);}.sh-next{color:var(--a);}.sh-lock{color:var(--tx);}
@@ -103,7 +101,6 @@ body::before{
 </style>
 </head>
 <body>
-
 <div id="hdr">
   <div id="hdr-top">
     <div id="gtitle">JUNGLE</div>
@@ -148,7 +145,6 @@ body::before{
   <div class="tab" onclick="switchTab('rec')">配方</div>
   <div class="tab" onclick="switchTab('shlt')">避難所</div>
 </div>
-
 <div id="panel-inv" class="panel active"><div id="inv-grid"></div></div>
 <div id="panel-eq"  class="panel"><div id="eq-wrap"></div></div>
 <div id="panel-rec" class="panel"><div id="rec-list"></div></div>
@@ -173,7 +169,7 @@ body::before{
 // TERRAIN
 // ═══════════════════════════════════
 const TR={
-  jungle:{ch:'T',lb:'雨林',  icon:'🌿',maxRes:8, regenDays:2, res:['原木','棕櫚葉','藤蔓','野果','藥草','樹皮','原木','藤蔓','蘑菇'],desc:'巨木參天，藤蔓纏繞，叫聲四起。'},
+  jungle:{ch:'T',lb:'雨林',  icon:'🌿',maxRes:8, regenDays:2, res:['原木','棕櫚葉','藤蔓','野果','藥草','樹皮','原木','藤蔓','蘑菇','薑根'],desc:'巨木參天，藤蔓纏繞，叫聲四起。'},
   bamboo:{ch:'%',lb:'竹林',  icon:'🎋',maxRes:6, regenDays:3, res:['竹子','竹子','竹子','藤蔓','樹皮'],desc:'翠綠竹林沙沙作響，清涼宜人。'},
   hill:  {ch:'^',lb:'山坡',  icon:'⛰',maxRes:5, regenDays:4, res:['石頭','石頭','燧石','骨頭','石頭'],desc:'岩石裸露，視野開闊。'},
   swamp: {ch:'*',lb:'沼澤',  icon:'🌊',maxRes:6, regenDays:2, res:['黏土','黏土','蘆薈','藥草','黏土'],desc:'陰暗泥濘，蟲鳴不絕。'},
@@ -184,68 +180,78 @@ const TR={
 
 const MAP_W=11,MAP_H=11;
 
-// ─ Y軸定義：北=y增加，南=y減少 ─
-// 移動向量：n往北y+1，s往南y-1
-const DIR_DELTA={
-  n:[0,1],s:[0,-1],e:[1,0],w:[-1,0],
-  north:[0,1],south:[0,-1],east:[1,0],west:[-1,0],
-};
+const DIR_DELTA={n:[0,1],s:[0,-1],e:[1,0],w:[-1,0],north:[0,1],south:[0,-1],east:[1,0],west:[-1,0]};
 const DIR_NAME={n:'北',s:'南',e:'東',w:'西',north:'北',south:'南',east:'東',west:'西'};
 
-// ═══════════════════════════════════
-// SHELTER STAGES — 平衡後材料需求
-// ═══════════════════════════════════
 const STAGES=[
   {id:0,name:'未建造',    needs:{},                                      bonus:''},
-  {id:1,name:'臨時遮蔽',  needs:{棕櫚葉:6,樹枝:4,繩索:2},               bonus:'白天可睡覺'},
+  {id:1,name:'臨時遮蔽',  needs:{棕櫚葉:6,樹枝:4,繩索:2},               bonus:'睡眠品質提升'},
   {id:2,name:'基礎木屋',  needs:{原木:10,竹子:6,藤蔓:4,繩索:2},         bonus:'防雨，體溫穩定'},
   {id:3,name:'強化結構',  needs:{原木:15,石頭:8,黏土:6,骨釘:4},         bonus:'防止夜間獸襲'},
   {id:4,name:'生活設施',  needs:{原木:10,金屬碎片:4,竹子:6,繩索:3},     bonus:'解鎖黏土爐+醫療站'},
   {id:5,name:'求救信號台',needs:{金屬碎片:8,電線:3,防水布:2,繩索:4},    bonus:'觸發救援結局！'},
 ];
 
-// ═══════════════════════════════════
-// RECIPES
-// 需要火堆才能製作的物品：竹炭、烤肉
-// 需要黏土爐才能製作的物品：烤魚、蘑菇湯
-// ═══════════════════════════════════
-const NEED_FIRE   =new Set(['竹炭','烤肉']);
-const NEED_KILN   =new Set(['烤魚','蘑菇湯']);
+// 需要火堆/黏土爐才能製作
+const NEED_FIRE=new Set(['竹炭','烤肉','篝火茶','薑根茶']);
+const NEED_KILN=new Set(['烤魚','蘑菇湯']);
 
 const RECIPES={
-  '繩索':    {needs:{藤蔓:3},                gives:{繩索:2},     type:'material', purpose:'建造避難所、武器防具必備'},
-  '竹炭':    {needs:{竹子:2},                gives:{竹炭:1},      type:'material', purpose:'需要火堆。退燒藥與竹水管原料'},
-  '骨釘':    {needs:{骨頭:2},                gives:{骨釘:3},      type:'material', purpose:'避難所第3階段建造用'},
-  '樹枝':    {needs:{原木:1},                gives:{樹枝:3},      type:'material', purpose:'避難所第1階段、火堆原料'},
-  '燧石刀':  {needs:{燧石:2,樹枝:1},          gives:{燧石刀:1},   type:'weapon',   atk:7,  purpose:'基礎刀具，ATK+7'},
-  '竹矛':    {needs:{竹子:2,繩索:1},           gives:{竹矛:1},     type:'weapon',   atk:10, purpose:'輕量遠攻，ATK+10'},
-  '石斧':    {needs:{石頭:2,原木:1,繩索:1},    gives:{石斧:1},     type:'weapon',   atk:13, purpose:'砍樹+戰鬥，ATK+13'},
-  '骨刀':    {needs:{骨頭:3,繩索:1},           gives:{骨刀:1},     type:'weapon',   atk:9,  purpose:'骨頭打磨，ATK+9'},
-  '金屬刀':  {needs:{金屬碎片:2,繩索:1},       gives:{金屬刀:1},   type:'weapon',   atk:18, purpose:'最強武器，ATK+18'},
-  '棕葉甲':  {needs:{棕櫚葉:6,繩索:3},         gives:{棕葉甲:1},   type:'armor',    def:4,  purpose:'植物防具，DEF+4'},
-  '竹甲':    {needs:{竹子:5,繩索:4},            gives:{竹甲:1},     type:'armor',    def:8,  purpose:'竹片鎧甲，DEF+8'},
-  '獸皮甲':  {needs:{獸皮:4,繩索:3},            gives:{獸皮甲:1},   type:'armor',    def:12, purpose:'皮革防具，DEF+12'},
-  '防水披風':{needs:{防水布:1,繩索:2},           gives:{防水披風:1}, type:'armor',    def:3,  purpose:'DEF+3，降低濕度累積'},
-  '火堆':    {needs:{原木:3,燧石:1,樹枝:3},     gives:{火堆:1},     type:'build',    purpose:'取暖烹飪基礎，防失溫'},
-  '竹水管':  {needs:{竹子:3,竹炭:1},            gives:{竹水管:1},   type:'tool',     purpose:'在河流淨化水，u使用'},
-  '獸皮水袋':{needs:{獸皮:2,繩索:1},            gives:{獸皮水袋:1}, type:'tool',     purpose:'雨天或河邊收集水×2'},
-  '陷阱':    {needs:{樹枝:4,繩索:2,電線:1},     gives:{陷阱:1},     type:'build',    purpose:'被動捕獵，每天有機會獲得食物'},
-  '黏土爐':  {needs:{黏土:6,石頭:4},            gives:{黏土爐:1},   type:'build',    purpose:'升級烹飪，解鎖烤魚/蘑菇湯'},
-  '醫療站':  {needs:{金屬碎片:2,繩索:3,棕櫚葉:4},gives:{醫療站:1}, type:'build',    purpose:'建造後附近使用急救藥效果+50%'},
-  '烤肉':    {needs:{野豬肉:1},                 gives:{烤肉:1},     type:'food',     hunger:65,purpose:'需要火堆，飢餓+65'},
-  '烤魚':    {needs:{魚:1},                    gives:{烤魚:1},      type:'food',     hunger:50,purpose:'需要黏土爐，飢餓+50'},
-  '蘑菇湯':  {needs:{蘑菇:2,水:1},              gives:{蘑菇湯:1},   type:'food',     hunger:45,purpose:'需要黏土爐，安全食用蘑菇'},
-  '乾果':    {needs:{野果:3,棕櫚葉:1},          gives:{乾果:2},     type:'food',     hunger:40,purpose:'保存食物，飢餓+40'},
-  '香蕉乾':  {needs:{香蕉:3,棕櫚葉:1},          gives:{香蕉乾:2},   type:'food',     hunger:45,purpose:'保存香蕉，飢餓+45'},
-  '樹皮茶':  {needs:{樹皮:2,水:1},              gives:{樹皮茶:1},   type:'medical',  purpose:'u飲用，口渴+40'},
-  '繃帶':    {needs:{樹皮:2,繩索:1},            gives:{繃帶:2},     type:'medical',  purpose:'u治療，HP+12，清感染'},
-  '急救藥':  {needs:{藥草:2,蘆薈:1},            gives:{急救藥:1},   type:'medical',  purpose:'u使用，HP+30，清感染'},
-  '退燒藥':  {needs:{藥草:3,蘆薈:2,竹炭:1},     gives:{退燒藥:1},   type:'medical',  purpose:'u使用，治癒叢林熱'},
-  '魚骨針':  {needs:{魚骨:2},                   gives:{魚骨針:1},   type:'medical',  purpose:'u縫合，清感染，HP+8'},
+  // ── 材料轉換 ──
+  '繩索':    {needs:{藤蔓:3},                gives:{繩索:2},      type:'material', purpose:'建造避難所、武器防具必備'},
+  '竹炭':    {needs:{竹子:2},                gives:{竹炭:1},       type:'material', purpose:'需要火堆。退燒藥與竹水管原料'},
+  '骨釘':    {needs:{骨頭:2},                gives:{骨釘:3},       type:'material', purpose:'避難所第3階段建造用'},
+  '樹枝':    {needs:{原木:1},                gives:{樹枝:3},       type:'material', purpose:'避難所第1階段、火堆原料'},
+  // ── 武器 ──
+  '燧石刀':  {needs:{燧石:2,樹枝:1},          gives:{燧石刀:1},    type:'weapon',   atk:7,  purpose:'基礎刀具，ATK+7'},
+  '竹矛':    {needs:{竹子:2,繩索:1},           gives:{竹矛:1},      type:'weapon',   atk:10, purpose:'輕量遠攻，ATK+10'},
+  '石斧':    {needs:{石頭:2,原木:1,繩索:1},    gives:{石斧:1},      type:'weapon',   atk:13, purpose:'砍樹+戰鬥，ATK+13'},
+  '骨刀':    {needs:{骨頭:3,繩索:1},           gives:{骨刀:1},      type:'weapon',   atk:9,  purpose:'骨頭打磨，ATK+9'},
+  '金屬刀':  {needs:{金屬碎片:2,繩索:1},       gives:{金屬刀:1},    type:'weapon',   atk:18, purpose:'最強武器，ATK+18'},
+  // ── 防具 ──
+  '棕葉甲':  {needs:{棕櫚葉:6,繩索:3},         gives:{棕葉甲:1},    type:'armor',    def:4,  purpose:'植物防具，DEF+4'},
+  '竹甲':    {needs:{竹子:5,繩索:4},            gives:{竹甲:1},      type:'armor',    def:8,  purpose:'竹片鎧甲，DEF+8'},
+  '獸皮甲':  {needs:{獸皮:4,繩索:3},            gives:{獸皮甲:1},    type:'armor',    def:12, purpose:'皮革防具，DEF+12'},
+  '防水披風':{needs:{防水布:1,繩索:2},           gives:{防水披風:1},  type:'armor',    def:3,  purpose:'DEF+3，u使用降低濕度'},
+  // ── 新增：棕葉蓑衣（早期輕量防濕）──
+  '棕葉蓑衣':{needs:{棕櫚葉:4,藤蔓:1},          gives:{棕葉蓑衣:1},  type:'armor',    def:1,  wetReduce:1, purpose:'DEF+1，穿戴後每tick濕度-1'},
+  // ── 建設 ──
+  '火堆':    {needs:{原木:3,燧石:1,樹枝:3},     gives:{火堆:1},      type:'build',    purpose:'取暖烹飪基礎，防失溫'},
+  '篝火堆':  {needs:{樹枝:4,藤蔓:1},            gives:{篝火堆:1},    type:'build',    purpose:'輕量一次性取暖，不需燧石'},
+  '竹水管':  {needs:{竹子:3,竹炭:1},            gives:{竹水管:1},    type:'tool',     purpose:'在河流淨化水，u使用'},
+  '獸皮水袋':{needs:{獸皮:2,繩索:1},            gives:{獸皮水袋:1},  type:'tool',     purpose:'雨天或河邊收集水×2'},
+  '陷阱':    {needs:{樹枝:4,繩索:2,電線:1},     gives:{陷阱:1},      type:'build',    purpose:'被動捕獵，每天有機會獲得食物'},
+  '黏土爐':  {needs:{黏土:6,石頭:4},            gives:{黏土爐:1},    type:'build',    purpose:'升級烹飪，解鎖烤魚/蘑菇湯'},
+  '醫療站':  {needs:{金屬碎片:2,繩索:3,棕櫚葉:4},gives:{醫療站:1},  type:'build',    purpose:'建造後附近使用急救藥效果提升'},
+  // ── 食物（新增口渴回復）──
+  '烤肉':    {needs:{野豬肉:1},                 gives:{烤肉:1},      type:'food',     hunger:65,thirst:0,  purpose:'需要火堆，飢餓+65'},
+  '烤魚':    {needs:{魚:1},                    gives:{烤魚:1},       type:'food',     hunger:50,thirst:10, purpose:'需要黏土爐，飢餓+50，口渴+10'},
+  '蘑菇湯':  {needs:{蘑菇:2,水:1},              gives:{蘑菇湯:1},    type:'food',     hunger:45,thirst:25, purpose:'需要黏土爐，飢餓+45，口渴+25'},
+  '乾果':    {needs:{野果:3,棕櫚葉:1},          gives:{乾果:2},      type:'food',     hunger:40,thirst:5,  purpose:'保存食物，飢餓+40，口渴+5'},
+  '香蕉乾':  {needs:{香蕉:3,棕櫚葉:1},          gives:{香蕉乾:2},    type:'food',     hunger:45,thirst:5,  purpose:'保存香蕉，飢餓+45，口渴+5'},
+  // ── 醫療/體溫/濕度 ──
+  '薑根茶':  {needs:{薑根:1,水:1},              gives:{薑根茶:1},    type:'medical',  purpose:'需要火堆。體溫+20，口渴+15'},
+  '篝火茶':  {needs:{藥草:1,水:1},              gives:{篝火茶:1},    type:'medical',  purpose:'需要火堆。體溫+15，口渴+20'},
+  '樹皮茶':  {needs:{樹皮:2,水:1},              gives:{樹皮茶:1},    type:'medical',  purpose:'口渴+40'},
+  '繃帶':    {needs:{樹皮:2,繩索:1},            gives:{繃帶:2},      type:'medical',  purpose:'u治療，HP+12，清感染'},
+  '急救藥':  {needs:{藥草:2,蘆薈:1},            gives:{急救藥:1},    type:'medical',  purpose:'u使用，HP+30，清感染'},
+  '退燒藥':  {needs:{藥草:3,蘆薈:2,竹炭:1},     gives:{退燒藥:1},    type:'medical',  purpose:'u使用，治癒叢林熱'},
+  '魚骨針':  {needs:{魚骨:2},                   gives:{魚骨針:1},    type:'medical',  purpose:'u縫合，清感染，HP+8'},
 };
 
-const EDIBLE={野果:20,香蕉:30,乾果:40,香蕉乾:45,烤肉:65,烤魚:50,蘑菇湯:45};
+// ── 食物：飢餓+口渴回復 ──
+// {hunger, thirst}
+const EDIBLE={
+  野果:     {hunger:20,thirst:8},
+  香蕉:     {hunger:30,thirst:10},
+  乾果:     {hunger:40,thirst:5},
+  香蕉乾:   {hunger:45,thirst:5},
+  烤肉:     {hunger:65,thirst:0},
+  烤魚:     {hunger:50,thirst:10},
+  蘑菇湯:   {hunger:45,thirst:25},
+};
 
+// ── 可直接使用的物品 ──
 const USABLE={
   棕櫚葉:   G=>{G.s.wet=cl(G.s.wet-20);log('用棕櫚葉遮身，濕度-20','ls');},
   蘆薈:     G=>{G.s.hp=cl(G.s.hp+15);log('塗抹蘆薈，HP+15','ls');},
@@ -253,6 +259,8 @@ const USABLE={
   繃帶:     G=>{G.s.hp=cl(G.s.hp+12);G.infected=false;log('包紮傷口，HP+12，清感染','ls');},
   急救藥:   G=>{G.s.hp=cl(G.s.hp+30);G.infected=false;log('服用急救藥，HP+30，清感染','ls');},
   退燒藥:   G=>{G.fever=false;G.s.hp=cl(G.s.hp+10);G.s.temp=cl(G.s.temp+15);log('服用退燒藥，叢林熱治癒','ls');},
+  薑根茶:   G=>{G.s.temp=cl(G.s.temp+20);G.s.thirst=cl(G.s.thirst+15);log('喝薑根茶，體溫+20，口渴+15','ls');},
+  篝火茶:   G=>{G.s.temp=cl(G.s.temp+15);G.s.thirst=cl(G.s.thirst+20);log('喝篝火茶，體溫+15，口渴+20','ls');},
   樹皮茶:   G=>{G.s.thirst=cl(G.s.thirst+40);log('喝樹皮茶，口渴+40','ls');},
   魚骨針:   G=>{G.infected=false;G.s.hp=cl(G.s.hp+8);log('縫合傷口，感染清除','ls');},
   竹水管:   G=>{
@@ -265,9 +273,10 @@ const USABLE={
     }else{log('現在沒有雨水或水源可收集。','lw');return false;}
   },
   防水披風: G=>{G.s.wet=cl(G.s.wet-15);log('穿上防水披風，濕度-15','ls');},
+  棕葉蓑衣: G=>{G.s.wet=cl(G.s.wet-10);log('整理棕葉蓑衣，濕度-10','ls');},
 };
 
-// 事件：感染觸發機率整體降低（0.4→0.28，0.35→0.24）
+// ── 事件池 ──
 const EVENTS={
   jungle:[
     {msg:'一條蟒蛇從草叢竄出！',type:'combat',enemy:'蟒蛇',hp:25,atk:10,drop:{獸皮:2,骨頭:1}},
@@ -276,6 +285,7 @@ const EVENTS={
     {msg:'蜂巢！蜜蜂攻擊了你。',type:'dmg',dmg:10,infectChance:0},
     {msg:'叢林深處傳來咆哮聲，你繞道而行。',type:'atm'},
     {msg:'你找到一株蘑菇叢。',type:'item',item:'蘑菇',qty:3},
+    {msg:'你挖到了一塊薑根！',type:'item',item:'薑根',qty:2},
   ],
   bamboo:[
     {msg:'野豬出沒！',type:'combat',enemy:'野豬',hp:35,atk:12,drop:{野豬肉:2,骨頭:2,獸皮:2}},
@@ -324,8 +334,13 @@ const NPC_LINES=[
 // ═══════════════════════════════════
 let G=null;
 
-function hasFire(){return G.built.some(b=>b.x===G.px&&b.y===G.py&&b.type==='火堆');}
+function hasFire(){return G.built.some(b=>b.x===G.px&&b.y===G.py&&(b.type==='火堆'||b.type==='篝火堆'));}
 function hasKiln(){return G.built.some(b=>b.x===G.px&&b.y===G.py&&b.type==='黏土爐');}
+function hasShelter(){return G.shelterStage>=1;}
+function wetReducePerTick(){
+  // 棕葉蓑衣裝備時每tick濕度-1
+  return G.equipped.armor==='棕葉蓑衣'?1:0;
+}
 
 function newGame(){
   const map=genMap();
@@ -345,7 +360,6 @@ function newGame(){
     px:sx,py:sy,
     s:{hp:100,hunger:100,thirst:100,temp:70,sleep:100,wet:0},
     infected:false,fever:false,
-    // 起點初始物資：水×3，繃帶×1
     inv:{水:3,繃帶:1},
     equipped:{weapon:null,armor:null},
     built:[],shelterStage:0,
@@ -442,9 +456,7 @@ function renderLocBar(){
   document.getElementById('loc-res-bar-inner').style.width=pct+'%';
   document.getElementById('loc-res-bar-inner').style.background=cellColor(cell,t);
   let label=cellLabel(cell,t);
-  if(cell.cur<=0&&t!=='river'&&TR[t]?.regenDays>0){
-    label=`${Math.max(1,cell.regenDay-G.day)}天後再生`;
-  }
+  if(cell.cur<=0&&t!=='river'&&TR[t]?.regenDays>0)label=`${Math.max(1,cell.regenDay-G.day)}天後再生`;
   document.getElementById('loc-res-label').textContent=label;
 }
 
@@ -527,10 +539,7 @@ function getAtk(){const w=G.equipped.weapon;return w&&RECIPES[w]?RECIPES[w].atk|
 function getDef(){const a=G.equipped.armor;return a&&RECIPES[a]?RECIPES[a].def||0:0;}
 
 // ═══════════════════════════════════
-// TICK — 平衡後衰減值
-// 飢餓 -4→-2，口渴 -6→-3
-// 感染扣血 -4→-2
-// 夜間獸襲第3天後才觸發，機率0.3→0.2
+// TICK
 // ═══════════════════════════════════
 function tick(mins=30){
   if(!G||G.dead||G.won)return;
@@ -540,7 +549,6 @@ function tick(mins=30){
     G.hour-=24;G.day++;
     regenResources();
     log(`── 第 ${G.day} 天 ──`,'lx');
-    // 陷阱被動捕獵
     if(G.built.some(b=>b.type==='陷阱')&&Math.random()<0.4){
       const prey=['野豬肉','獸皮','骨頭'][Math.floor(Math.random()*3)];
       addItem(prey,1);log(`陷阱捕到獵物！取得 ${prey}×1`,'ls');
@@ -554,43 +562,38 @@ function tick(mins=30){
   const night=G.hour<6||G.hour>=20;
   const rain=G.weather==='rain'||G.weather==='storm';
   const fire=hasFire();
-  const shelterTemp=G.shelterStage>=2; // 基礎木屋提供體溫保護
+  const shelterTemp=G.shelterStage>=2;
 
-  // ── 狀態衰減（已平衡）──
-  G.s.hunger=cl(G.s.hunger-2);   // 原-4
-  G.s.thirst=cl(G.s.thirst-3);   // 原-6
+  G.s.hunger=cl(G.s.hunger-2);
+  G.s.thirst=cl(G.s.thirst-3);
   G.s.sleep=cl(G.s.sleep-(night?0:2));
 
-  // 濕度
-  if(rain)G.s.wet=cl(G.s.wet+(G.weather==='storm'?12:6));
-  else G.s.wet=cl(G.s.wet-4);
+  // 濕度：棕葉蓑衣每tick被動-1
+  const wetReduce=wetReducePerTick();
+  if(rain)G.s.wet=cl(G.s.wet+(G.weather==='storm'?12:6)-wetReduce);
+  else G.s.wet=cl(G.s.wet-4-wetReduce);
   if(G.map[G.py][G.px]==='swamp')G.s.wet=cl(G.s.wet+4);
 
-  // 體溫：有火堆或第2階段避難所可保溫
+  // 體溫
   if(rain&&!fire&&!shelterTemp)G.s.temp=cl(G.s.temp-5);
   else if(night&&!fire&&!shelterTemp)G.s.temp=cl(G.s.temp-2);
-  else if(shelterTemp||fire)G.s.temp=cl(G.s.temp+2); // 有遮蔽回溫
+  else if(shelterTemp||fire)G.s.temp=cl(G.s.temp+2);
   else G.s.temp=cl(G.s.temp+1);
 
-  // 叢林熱觸發
   if(G.s.wet>80&&Math.random()<0.12&&!G.fever){G.fever=true;log('發冷發熱...叢林熱發作！','ld');}
-
-  // ── HP 傷害 ──
-  if(G.infected)G.s.hp=cl(G.s.hp-2);   // 原-4
-  if(G.fever)G.s.hp=cl(G.s.hp-2);      // 原-3
+  if(G.infected)G.s.hp=cl(G.s.hp-2);
+  if(G.fever)G.s.hp=cl(G.s.hp-2);
   if(G.s.hunger<=0)G.s.hp=cl(G.s.hp-4);
   if(G.s.thirst<=0)G.s.hp=cl(G.s.hp-6);
   if(G.s.temp<20)G.s.hp=cl(G.s.hp-4);
 
-  // ── 夜間獸襲：第3天後才觸發，機率0.2 ──
   if(night&&G.day>=3&&G.shelterStage<3&&G.hour===2&&Math.random()<0.2){
-    log('夜間野獸靠近！','ld');
-    G.s.hp=cl(G.s.hp-12);
+    log('夜間野獸靠近！','ld');G.s.hp=cl(G.s.hp-12);
     if(Math.random()<0.24){G.infected=true;log('爪痕感染！','ld');}
   }
 
   G.tickN++;
-  if(G.tickN%5===0)warnStats(); // 原每4tick警告一次，改5tick
+  if(G.tickN%5===0)warnStats();
   if(G.s.hp<=0)doDeath();
 }
 
@@ -639,9 +642,7 @@ function doMove(dir){
 
 function doExplore(){
   const t=G.map[G.py][G.px];const cell=getCell();const td=TR[t];
-  if(t!=='river'&&cell.cur<=0){
-    log(`此處資源耗盡。${regenLabel(t,cell)}`,'ld');return;
-  }
+  if(t!=='river'&&cell.cur<=0){log(`此處資源耗盡。${regenLabel(t,cell)}`,'ld');return;}
   tick(30);G.s.stamina=cl(G.s.stamina-10);
   const res=td?.res||[];
   if(res.length){
@@ -663,7 +664,7 @@ function doExplore(){
       }
     }
   }
-  if(Math.random()<0.4)triggerEvent(t); // 原0.45
+  if(Math.random()<0.4)triggerEvent(t);
   renderAll();
 }
 
@@ -701,7 +702,7 @@ function doCombat(ev){
     if(ev.drop){Object.entries(ev.drop).forEach(([k,v])=>addItem(k,v));log(`戰利品: ${Object.entries(ev.drop).map(([k,v])=>k+'×'+v).join(', ')}`,'ls');}
   }else{
     log(`${ev.enemy}擊傷你，你勉強逃脫。HP: ${Math.round(G.s.hp)}`,'ld');
-    if(Math.random()<0.24){G.infected=true;log('傷口感染！','ld');}  // 原0.35
+    if(Math.random()<0.24){G.infected=true;log('傷口感染！','ld');}
   }
 }
 
@@ -709,15 +710,8 @@ function doCraft(item){
   if(!item){log('用法: c [物品名]  例: c 繩索','lw');return;}
   const rec=RECIPES[item];
   if(!rec){log(`不知道如何製作「${item}」，查看配方面板 (r)。`,'lw');return;}
-
-  // ── 場所需求檢查 ──
-  if(NEED_FIRE.has(item)&&!hasFire()){
-    log(`製作「${item}」需要先在此處建造火堆。(c 火堆)`,'lw');return;
-  }
-  if(NEED_KILN.has(item)&&!hasKiln()){
-    log(`製作「${item}」需要先在此處建造黏土爐。(c 黏土爐)`,'lw');return;
-  }
-
+  if(NEED_FIRE.has(item)&&!hasFire()){log(`製作「${item}」需要先在此處建造火堆。(c 火堆)`,'lw');return;}
+  if(NEED_KILN.has(item)&&!hasKiln()){log(`製作「${item}」需要先在此處建造黏土爐。(c 黏土爐)`,'lw');return;}
   const miss=Object.entries(rec.needs).filter(([k,v])=>(G.inv[k]||0)<v).map(([k,v])=>`${k}(缺${v-(G.inv[k]||0)})`);
   if(miss.length){log(`材料不足: ${miss.join(', ')}`,'lw');return;}
   Object.entries(rec.needs).forEach(([k,v])=>remItem(k,v));
@@ -727,7 +721,11 @@ function doCraft(item){
   if(rec.type==='weapon'){G.equipped.weapon=item;log(`${item} 已裝備為武器。`,'ls');}
   else if(rec.type==='armor'){G.equipped.armor=item;log(`${item} 已裝備為防具。`,'ls');}
   else if(rec.type==='build'){G.built.push({x:G.px,y:G.py,type:item});log(`${item} 已建造於此處。`,'ls');}
-  else if(rec.type==='food'){G.s.hunger=cl(G.s.hunger+(rec.hunger||30));remItem(item,1);}
+  else if(rec.type==='food'){
+    G.s.hunger=cl(G.s.hunger+(rec.hunger||30));
+    if(rec.thirst)G.s.thirst=cl(G.s.thirst+rec.thirst);
+    remItem(item,1);
+  }
   renderAll();
 }
 
@@ -750,15 +748,22 @@ function doBuild(stage){
 }
 
 function doEat(item){
-  if(!item){const a=Object.keys(EDIBLE).find(k=>(G.inv[k]||0)>0);if(!a){log('背包裡沒有食物。','lw');return;}item=a;}
+  if(!item){
+    const a=Object.keys(EDIBLE).find(k=>(G.inv[k]||0)>0);
+    if(!a){log('背包裡沒有食物。','lw');return;}
+    item=a;
+  }
   if(!(G.inv[item]>0)){log(`你沒有「${item}」。`,'lw');return;}
   const val=EDIBLE[item];
-  if(val===undefined){
+  if(!val){
     if(item==='蘑菇')log('生蘑菇有毒！先用黏土爐 c 蘑菇湯 再食用。','lw');
     else log(`「${item}」不是食物，試試 u ${item}。`,'lw');
     return;
   }
-  G.s.hunger=cl(G.s.hunger+val);log(`吃了 ${item}，飢餓+${val}。`,'ls');
+  G.s.hunger=cl(G.s.hunger+val.hunger);
+  if(val.thirst)G.s.thirst=cl(G.s.thirst+val.thirst);
+  const thirstMsg=val.thirst?`，口渴+${val.thirst}`:'';
+  log(`吃了 ${item}，飢餓+${val.hunger}${thirstMsg}。`,'ls');
   remItem(item,1);tick(10);renderAll();
 }
 
@@ -768,24 +773,45 @@ function doDrink(){
   }else if(G.map[G.py][G.px]==='river'){
     addItem('水',2);G.s.thirst=cl(G.s.thirst+30);
     log('直接飲用河水（未淨化），有感染風險。','lw');
-    if(Math.random()<0.2){G.infected=true;log('水源污染！腸胃感染。','ld');}  // 原0.25
+    if(Math.random()<0.2){G.infected=true;log('水源污染！腸胃感染。','ld');}
   }else if(G.weather==='rain'||G.weather==='storm'){
-    addItem('水',1);G.s.thirst=cl(G.s.thirst+35);  // 原+20
+    addItem('水',1);G.s.thirst=cl(G.s.thirst+35);
     log('收集了雨水，口渴緩解。','ls');
   }else{
     log('附近沒有水源。前往河流取水，或下雨時收集。','lw');
+    log('提示: 野果、香蕉、烤魚、蘑菇湯也能補充水分。','lm');
   }
   tick(10);renderAll();
 }
 
+// ── 睡眠品質系統 ──
+// 有避難所+火堆: 睡眠+80，體力+60（最佳）
+// 有避難所（無火堆）: 睡眠+65，體力+45
+// 無避難所（夜晚）: 睡眠+45，體力+30（野外露宿）
+// 無避難所（白天）: 睡眠+20，體力+15（淺眠）
 function doSleep(){
-  const hasShlt=G.shelterStage>=1,night=G.hour>=20||G.hour<6;
-  if(!hasShlt&&!night){log('沒有遮蔽，白天無法睡覺。先 b 1 建造臨時遮蔽。','lw');return;}
-  log('你躺下休息...','lm');tick(480);
-  G.s.sleep=cl(G.s.sleep+80);G.s.stamina=cl(G.s.stamina+60);
+  const night=G.hour>=20||G.hour<6;
   const fire=hasFire();
-  if(fire){G.s.temp=cl(G.s.temp+20);log('火堆讓你睡得溫暖。','ls');}
-  log('你醒來，精神恢復了。','ls');renderAll();
+  const shelter=hasShelter();
+  log('你躺下休息...','lm');
+  tick(480);
+
+  let sleepGain,staminaGain,qualityMsg;
+  if(shelter&&fire){
+    sleepGain=80;staminaGain=60;qualityMsg='舒適睡眠，精神飽滿。';
+  }else if(shelter){
+    sleepGain=65;staminaGain=45;qualityMsg='在遮蔽下入睡，睡得還算好。';
+  }else if(night){
+    sleepGain=45;staminaGain=30;qualityMsg='野外露宿，睡眠品質較差。';
+  }else{
+    sleepGain=20;staminaGain=15;qualityMsg='白天野外淺眠，幾乎沒有恢復。';
+  }
+  G.s.sleep=cl(G.s.sleep+sleepGain);
+  G.s.stamina=cl(G.s.stamina+staminaGain);
+  if(fire){G.s.temp=cl(G.s.temp+20);}
+  log(qualityMsg,shelter?'ls':'lw');
+  if(!shelter)log('提示: 建造避難所 (b 1) 可大幅提升睡眠品質。','lm');
+  renderAll();
 }
 
 function doUse(item){
@@ -832,24 +858,17 @@ function processCmd(raw){
   let parts=raw.trim().split(/\s+/);
   let cmd=parts[0].toLowerCase();
   let arg=parts.slice(1).join(' ');
-
-  if(ALIASES[cmd]){
-    const ex=ALIASES[cmd].split(' ');
-    cmd=ex[0];if(ex[1]&&!arg)arg=ex[1];
-  }
+  if(ALIASES[cmd]){const ex=ALIASES[cmd].split(' ');cmd=ex[0];if(ex[1]&&!arg)arg=ex[1];}
   if(cmd==='c'&&arg)cmd='craft';
   if(cmd==='b'&&arg)cmd='build';
   if(cmd==='u'&&arg)cmd='use';
-
   hist.unshift(raw);if(hist.length>40)hist.pop();histI=-1;
   log(`<span style="color:var(--td)">></span> ${raw}`,'lm');
-
   if(G?.dead||G?.won){
     if(cmd==='restart'||cmd==='new')restartGame();
     else log('遊戲已結束。輸入 restart 重新開始。','lm');
     return;
   }
-
   switch(cmd){
     case 'go':doMove(arg.toLowerCase());break;
     case 'look':tick(10);descLoc();renderAll();break;
@@ -881,9 +900,9 @@ function processCmd(raw){
         ['l','look','查看地形與剩餘資源'],
         ['c [物品]','craft [物品]','製作物品'],
         ['b [1-5]','build [1-5]','升級避難所（主目標）'],
-        ['eat [食物]','eat','吃東西'],
+        ['eat [食物]','eat','吃東西（部分食物補水）'],
         ['d','drink','喝水'],
-        ['sl','sleep','睡覺'],
+        ['sl','sleep','睡覺（無遮蔽品質較差）'],
         ['u [物品]','use [物品]','使用道具'],
         ['st','status','詳細狀態'],
         ['sh','shelter','避難所進度'],
@@ -899,7 +918,7 @@ function processCmd(raw){
       logSep();
       log('─ 素材地形對照 ─','lo');
       [
-        ['原木、藤蔓、棕櫚葉、藥草、蘑菇','雨林 T'],
+        ['原木、藤蔓、棕櫚葉、藥草、蘑菇、薑根','雨林 T'],
         ['竹子、樹皮','竹林 %'],
         ['石頭、燧石、骨頭','山坡 ^'],
         ['黏土、蘆薈','沼澤 *'],
@@ -908,9 +927,16 @@ function processCmd(raw){
         ['金屬碎片、電線、防水布','殘骸 #'],
       ].forEach(([items,terrain])=>log(`${items} → ${terrain}`,'lm'));
       logSep();
-      log('─ 需要設施才能製作 ─','lo');
-      log('需要火堆: 竹炭、烤肉','lm');
+      log('─ 設施需求 ─','lo');
+      log('需要火堆: 竹炭、烤肉、薑根茶、篝火茶','lm');
       log('需要黏土爐: 烤魚、蘑菇湯','lm');
+      logSep();
+      log('─ 體溫/濕度對策 ─','lo');
+      log('體溫低: c 薑根茶 / c 篝火茶 / c 火堆','lm');
+      log('濕度高: u 棕櫚葉 / c 棕葉蓑衣 / u 防水披風','lm');
+      logSep();
+      log('─ 食物補水量 ─','lo');
+      log('野果+8 香蕉+10 烤魚+10 蘑菇湯+25','lm');
       logSep();
       log('目標: b 1→5 完成求救信號台，第30天獲救！','lo');
       logSep();break;
